@@ -1,0 +1,175 @@
+version: "3.10"
+
+networks:
+  verim_network:
+    name: verim_network
+  verim_gateway_network:
+    name: verim_gateway_network
+
+
+services:
+  redis:
+    image: redis:7.2.0
+    container_name: ${CONTAINER_PREFIX}-redis
+    networks:
+      - verim_network
+      - verim_gateway_network
+    ports:
+      - "13379:6379"
+    volumes:
+      - verim_redis_data:/var/lib/redis/data/
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    hostname: verim-rabbitmq
+    container_name: ${CONTAINER_PREFIX}-rabbitmq
+    volumes:
+      - verim_rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    networks:
+      - verim_network
+      - verim_gateway_network
+    restart: on-failure
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  gateway:
+    container_name: ${CONTAINER_PREFIX}-gateway
+    build:
+      context: .
+      dockerfile: ./gateway/Dockerfile
+    working_dir: ${DEFAULT_SERVICE_DIR}
+    env_file:
+      - .env
+    volumes:
+      # app dir
+      - ./gateway/:${DEFAULT_SERVICE_DIR}
+      # web stuff
+      - ${STATIC_PATH}:/static
+      - ${MEDIA_PATH}:/media
+      - ${LOG_PATH}:/logs
+      # protobufs
+      - ./protobufs/compiled/auth_pb2_grpc.py:${DEFAULT_SERVICE_DIR}/auth_pb2_grpc.py
+      - ./protobufs/compiled/auth_pb2.py:${DEFAULT_SERVICE_DIR}/auth_pb2.py
+      - ./protobufs/compiled/auth_grpc_typed.py:${DEFAULT_SERVICE_DIR}/auth_grpc_typed.py
+      - ./protobufs/compiled/publisher_pb2_grpc.py:${DEFAULT_SERVICE_DIR}/publisher_pb2_grpc.py
+      - ./protobufs/compiled/publisher_pb2.py:${DEFAULT_SERVICE_DIR}/publisher_pb2.py
+      - ./protobufs/compiled/publisher_grpc_typed.py:${DEFAULT_SERVICE_DIR}/publisher_grpc_typed.py
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    networks:
+      - verim_network
+      - verim_gateway_network
+    restart: always
+
+  celery-worker:
+    container_name: ${CONTAINER_PREFIX}-celery-worker
+    build:
+      context: .
+      dockerfile: ./gateway/Dockerfile
+    command: sh -c "celery -A config.celery.app worker -l debug"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      # app dir
+      - ./gateway/:${DEFAULT_SERVICE_DIR}
+      # web stuff
+      - ${STATIC_PATH}:/static
+      - ${MEDIA_PATH}:/media
+      - ${LOG_PATH}:/logs
+      # protobufs
+      - ./protobufs/compiled/auth_pb2_grpc.py:${DEFAULT_SERVICE_DIR}/auth_pb2_grpc.py
+      - ./protobufs/compiled/auth_pb2.py:${DEFAULT_SERVICE_DIR}/auth_pb2.py
+      - ./protobufs/compiled/auth_grpc_typed.py:${DEFAULT_SERVICE_DIR}/auth_grpc_typed.py
+      - ./protobufs/compiled/publisher_pb2_grpc.py:${DEFAULT_SERVICE_DIR}/publisher_pb2_grpc.py
+      - ./protobufs/compiled/publisher_pb2.py:${DEFAULT_SERVICE_DIR}/publisher_pb2.py
+      - ./protobufs/compiled/publisher_grpc_typed.py:${DEFAULT_SERVICE_DIR}/publisher_grpc_typed.py
+    networks:
+      - verim_network
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "celery inspect ping --destination celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  celery-beat:
+    container_name: ${CONTAINER_PREFIX}-celery-beat
+    build:
+      context: .
+      dockerfile: ./gateway/Dockerfile
+    command: sh -c "celery -A config.celery.app beat -l debug"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      # app dir
+      - ./gateway/:${DEFAULT_SERVICE_DIR}
+      # web stuff
+      - ${STATIC_PATH}:/static
+      - ${MEDIA_PATH}:/media
+      - ${LOG_PATH}:/logs
+      # protobufs
+      - ./protobufs/compiled/auth_pb2_grpc.py:${DEFAULT_SERVICE_DIR}/auth_pb2_grpc.py
+      - ./protobufs/compiled/auth_pb2.py:${DEFAULT_SERVICE_DIR}/auth_pb2.py
+      - ./protobufs/compiled/auth_grpc_typed.py:${DEFAULT_SERVICE_DIR}/auth_grpc_typed.py
+      - ./protobufs/compiled/publisher_pb2_grpc.py:${DEFAULT_SERVICE_DIR}/publisher_pb2_grpc.py
+      - ./protobufs/compiled/publisher_pb2.py:${DEFAULT_SERVICE_DIR}/publisher_pb2.py
+      - ./protobufs/compiled/publisher_grpc_typed.py:${DEFAULT_SERVICE_DIR}/publisher_grpc_typed.py
+    networks:
+      - verim_network
+    restart: always
+
+  celery-flower:
+    image: mher/flower:2.0
+    container_name: ${CONTAINER_PREFIX}-celery-flower
+    environment:
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      FLOWER_PORT: ${FLOWER_PORT}
+      FLOWER_BASIC_AUTH: ${FLOWER_LOGIN}:${FLOWER_PASSWORD}
+      FLOWER_URL_PREFIX: ${FLOWER_URL_PREFIX}
+    depends_on:
+      celery-worker:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "5555:5555"
+    networks:
+      - verim_network
+    restart: always
+
+volumes:
+  verim_rabbitmq_data:
+    name: verim_rabbitmq_data
+  verim_redis_data:
+    name: verim_redis_data
