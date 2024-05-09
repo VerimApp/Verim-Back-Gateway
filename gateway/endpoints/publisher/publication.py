@@ -8,7 +8,7 @@ from fastapi_versioning import version
 from fastapi_pagination import Page
 from dependency_injector.wiring import Provide, inject
 
-from publisher_grpc_typed import (
+from protobufs.compiled.publisher_grpc_typed import (
     IPublisherStub,
     CreatePublicationRequest,
     PaginationRequest,

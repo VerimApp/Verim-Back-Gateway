@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi_versioning import version
 from dependency_injector.wiring import Provide, inject
 
-from auth_grpc_typed import IAuthStub, RefreshTokensRequest
+from protobufs.compiled.auth_grpc_typed import IAuthStub, RefreshTokensRequest
 from config.di import Container
 from schemas import JWTTokensSchema, RefreshTokensSchema
 from utils.routing import CustomAPIRouter

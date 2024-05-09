@@ -95,52 +95,6 @@ services:
       retries: 3
     restart: unless-stopped
 
-  celery-beat:
-    container_name: ${CONTAINER_PREFIX}-celery-beat
-    build:
-      context: .
-      dockerfile: ./gateway/Dockerfile
-    command: sh -c "celery -A config.celery.app beat -l debug"
-    depends_on:
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    env_file:
-      - .env
-    volumes:
-      # app dir
-      - ./gateway/:${DEFAULT_SERVICE_DIR}
-      # web stuff
-      - ${STATIC_PATH}:/static
-      - ${MEDIA_PATH}:/media
-      - ${LOG_PATH}:/logs
-    networks:
-      - verim_network
-    restart: unless-stopped
-
-  celery-flower:
-    image: mher/flower:2.0
-    container_name: ${CONTAINER_PREFIX}-celery-flower
-    environment:
-      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
-      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
-      FLOWER_PORT: ${FLOWER_PORT}
-      FLOWER_BASIC_AUTH: ${FLOWER_LOGIN}:${FLOWER_PASSWORD}
-      FLOWER_URL_PREFIX: ${FLOWER_URL_PREFIX}
-    depends_on:
-      celery-worker:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    env_file:
-      - .env
-    ports:
-      - "5555:5555"
-    networks:
-      - verim_network
-    restart: unless-stopped
-
 volumes:
   verim_rabbitmq_data:
     name: verim_rabbitmq_data

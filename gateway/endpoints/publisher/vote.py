@@ -5,7 +5,7 @@ from fastapi.middleware import Middleware
 from fastapi_versioning import version
 from dependency_injector.wiring import Provide, inject
 
-from publisher_grpc_typed import IPublisherStub, VoteRequest
+from protobufs.compiled.publisher_grpc_typed import IPublisherStub, VoteRequest
 from config.di import Container
 from schemas import VoteSchema
 from utils.middleware import AuthenticationMiddleware

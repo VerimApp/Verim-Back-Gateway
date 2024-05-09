@@ -19,6 +19,8 @@ AUTH_GRPC_PORT = os.environ.get("AUTH_GRPC_PORT")
 PUBLISHER_GRPC_HOST = os.environ.get("PUBLISHER_GRPC_HOST")
 PUBLISHER_GRPC_PORT = os.environ.get("PUBLISHER_GRPC_PORT")
 
+CONFIRMATION_CODE_LENGTH = int(os.environ.get("CONFIRMATION_CODE_LENGTH"))
+
 APP_NAME = os.environ.get("GETEWAY_APP_NAME")
 PORT = os.environ.get("GATEWAY_PORT")
 APP_VERSION = os.environ.get("APP_VERSION")

@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 from fastapi_versioning import version
 from dependency_injector.wiring import Provide, inject
 
-from auth_grpc_typed import (
+from protobufs.compiled.auth_grpc_typed import (
     IAuthStub,
     RegisterRequest,
     RepeatRegisterRequest,

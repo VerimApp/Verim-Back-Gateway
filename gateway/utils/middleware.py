@@ -58,7 +58,7 @@ class AuthenticationMiddleware:
                 await self._app(scope, receive, send)
             return
 
-        from auth_grpc_typed import AuthRequest
+        from protobufs.compiled.auth_grpc_typed import AuthRequest
         from config import settings
         from config.di import Container
 

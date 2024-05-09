@@ -4,7 +4,7 @@ from asgiref.sync import async_to_sync
 from celery import Celery
 
 from .mail import SendEmailDict
-from auth_grpc_typed import CheckEmailConfirmedRequest
+from protobufs.compiled.auth_grpc_typed import CheckEmailConfirmedRequest
 from config.di import Container
 
 

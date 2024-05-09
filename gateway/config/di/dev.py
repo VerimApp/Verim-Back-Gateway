@@ -1,9 +1,9 @@
 from dependency_injector import containers, providers
 
-import auth_pb2_grpc
-import publisher_pb2_grpc
-from auth_grpc_typed import AuthStub
-from publisher_grpc_typed import PublisherStub
+from protobufs.compiled import auth_pb2_grpc
+from protobufs.compiled import publisher_pb2_grpc
+from protobufs.compiled.auth_grpc_typed import AuthStub
+from protobufs.compiled.publisher_grpc_typed import PublisherStub
 from config import settings
 from config.mail import _SendEmail
 from config.grpc import GRPCConnection
