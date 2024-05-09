@@ -201,6 +201,10 @@ class LoggingMiddleware:
             )
         duration: int = math.ceil((time.time() - start_time) * 1000)
         response_body = response_body.decode()
+        try:
+            response_body = json.loads(response_body)
+        except json.JSONDecodeError:
+            response_body = None
         # Инициализация и формирования полей для запроса-ответа
         request_json_fields = RequestJsonLogSchema(
             request_uri=str(request.url),
@@ -219,7 +223,7 @@ class LoggingMiddleware:
             response_status_code=response.status_code,
             response_size=int(response_headers.get("content-length", 0)),
             response_headers=response_headers,
-            response_body=json.loads(response_body) if response_body else {},
+            response_body=response_body or {},
             duration=duration,
         ).dict()
         # Хочется на каждый запрос читать
